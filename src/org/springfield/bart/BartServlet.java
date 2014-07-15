@@ -18,7 +18,6 @@
 * You should have received a copy of the GNU General Public License
 * along with Lou.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 package org.springfield.bart;
 
 import java.io.BufferedReader;
@@ -100,10 +99,8 @@ public class BartServlet extends HttpServlet {
 		response.addHeader("Access-Control-Allow-Origin", "*");  
 		response.addHeader("Access-Control-Allow-Methods","GET, POST, PUT, DELETE, OPTIONS");
 		response.addHeader("Access-Control-Allow-Headers", "Content-Type");
-
 		
 		String authorization = request.getHeader("Authorization");
-		System.out.println("AU="+authorization);
 	    if (authorization!=null && authorization.startsWith("Basic")) {
 	    	try {
 	    		String base64 = authorization.substring("Basic".length()).trim();
@@ -111,7 +108,6 @@ public class BartServlet extends HttpServlet {
 	    		final String[] p = values.split(":",2);
 	    		account = p[0];
 	    		password = p[1];
-	    		System.out.println("NAME="+account+" PASSWORD="+password);
 	    	} catch(Exception e) {
 	    		e.printStackTrace();
 				response.setContentType("text/xml; charset=UTF-8");

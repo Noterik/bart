@@ -1,3 +1,23 @@
+/* 
+* LazyHomer.java
+* 
+* Copyright (c) 2014 Noterik B.V.
+* 
+* This file is part of Bart, related to the Noterik Springfield project.
+*
+* Bart is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* Bart is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with Bart.  If not, see <http://www.gnu.org/licenses/>.
+*/
 package org.springfield.bart.homer;
 
 import java.io.BufferedInputStream;
@@ -18,6 +38,8 @@ import java.util.Set;
 import org.apache.log4j.*;
 import org.dom4j.*;
 import org.springfield.mojo.http.*;
+import org.springfield.mojo.interfaces.ServiceInterface;
+import org.springfield.mojo.interfaces.ServiceManager;
 
 
 public class LazyHomer implements MargeObserver {
@@ -119,11 +141,6 @@ public class LazyHomer implements MargeObserver {
 				}
 			}
 		}
-		if (oldsize>0) {
-			// we already had one so lets see if we need to switch to
-			// a better one.
-			getDifferentSmithers();
-		}
 	}
 	
 	public static BartProperties getMyBartProperties() {
@@ -147,10 +164,11 @@ public class LazyHomer implements MargeObserver {
 	
 	
 	private Boolean checkKnown() {
-	//	System.out.println("MYIP="+myip+" SM="+selectedsmithers);
+		ServiceInterface smithers = ServiceManager.getService("smithers");
+		if (smithers==null) return false;
 
 		String xml = "<fsxml><properties><depth>1</depth></properties></fsxml>";
-		String nodes = LazyHomer.sendRequest("GET","/domain/internal/service/bart/nodes",xml,"text/xml");
+		String nodes = smithers.get("/domain/internal/service/bart/nodes",xml,"text/xml");
 
 		boolean iamok = false;
 
@@ -226,7 +244,7 @@ public class LazyHomer implements MargeObserver {
 		        		newbody+="<defaultloglevel>info</defaultloglevel>";
 		        	}
 		        	newbody+="</properties></nodes></fsxml>";	
-					LazyHomer.sendRequest("PUT","/domain/internal/service/bart/properties",newbody,"text/xml");
+					smithers.put("/domain/internal/service/bart/properties",newbody,"text/xml");
 				}
 			}
 		} catch (Exception e) {
@@ -237,8 +255,10 @@ public class LazyHomer implements MargeObserver {
 	}
 	
 	public static void setLastSeen() {
+		ServiceInterface smithers = ServiceManager.getService("smithers");
+		if (smithers==null) return;
 		Long value = new Date().getTime();
-		LazyHomer.sendRequest("PUT", "/domain/internal/service/bart/nodes/"+myip+"/properties/lastseen", ""+value, "text/xml");
+		smithers.put("/domain/internal/service/bart/nodes/"+myip+"/properties/lastseen", ""+value, "text/xml");
 	}
 	
 	private void initConfig() {
@@ -308,7 +328,6 @@ public class LazyHomer implements MargeObserver {
 				SmithersProperties s = (SmithersProperties)iter.next();
 				if (s.isAlive()) {
 					selectedsmithers = s;
-				//	System.out.println("RESULTAAA="+LazyHomer.sendRequest("PUT", "/domain/internal/service/bart/nodes/"+myip+"/properties/activesmithers", selectedsmithers.getIpNumber(), "text/xml"));
 				}
 			}
 		}
@@ -369,103 +388,7 @@ public class LazyHomer implements MargeObserver {
 		return (os.indexOf("nix") >= 0 || os.indexOf("nux") >= 0);
  	}
 
-	public synchronized static String sendRequest(String method,String url,String body,String contentType) {
-		return sendRequest(method,url,body,contentType,null);
-	}
 	
-	public synchronized static String sendRequest(String method,String url,String body,String contentType,String cookies) {
-		String fullurl = getSmithersUrl()+url;
-		String result = null;
-		boolean validresult = true;
-		
-		// first try 
-		try {
-			result = (HttpHelper.sendRequest(method, fullurl, body, contentType,cookies)).getResponse();
-			if (result.indexOf("<?xml")==-1) {
-				LOG.error("FAIL TYPE ONE ("+fullurl+")");
-				LOG.error("XML="+result);
-				validresult = false;
-			}
-		} catch(Exception e) {
-			LOG.error("FAIL TYPE TWO ("+fullurl+")");
-			LOG.error("XML="+result);
-			validresult = false;
-		}
-		
-		// something is wrong retry with new server
-		while (!validresult) {
-			validresult = true;
-			// turn the current one off
-			if (selectedsmithers!=null) selectedsmithers.setAlive(false);
-			getDifferentSmithers();
-			fullurl = getSmithersUrl()+url;
-			try {
-				result = (HttpHelper.sendRequest(method, fullurl, body, contentType,cookies)).getResponse();
-				if (result.indexOf("<?xml")==-1) {
-					LOG.error("BARTFAIL TYPE THREE ("+fullurl+")");
-					LOG.error("BART XML="+result);
-					validresult = false;
-				}
-			} catch(Exception e) {
-				validresult = false;
-				LOG.error("FAIL TYPE FOUR ("+fullurl+")");
-				LOG.error("XML="+result);
-			}
-		}
-		
-		LOG.debug("Valid request ("+fullurl+") ");
-		return result;
-	}
-	
-	private static void getDifferentSmithers() {
-		LOG.debug("Request for new smithers");
-		// lets first find our prefered smithers.
-		BartProperties mp = getMyBartProperties();
-		String pref = mp.getPreferedSmithers();
-		SmithersProperties winner = null;
-		for(Iterator<SmithersProperties> iter = smithers.values().iterator(); iter.hasNext(); ) {
-			SmithersProperties sm = (SmithersProperties)iter.next();
-			//System.out.println("PREF BART SMITHERS="+sm.getIpNumber()+" "+sm.isAlive());
-			if (sm.isAlive()) {
-				if (sm.getIpNumber().equals(pref))  {
-					winner = sm; // we can return its the prefered
-				} else if (winner==null) {
-					winner = sm; // only override if empty
-				}
-			}
-		}
-		if (winner==null) {
-			// they are all down ? ok this is tricky lets wait until one comes up
-			boolean foundone = false;
-			while (!foundone) {
-				LOG.info("All smithers seem down waiting for one to recover");
-				LazyHomer.send("INFO","/domain/internal/service/getname");
-				for(Iterator<SmithersProperties> iter = smithers.values().iterator(); iter.hasNext(); ) {
-					SmithersProperties sm = (SmithersProperties)iter.next();
-					if (sm.isAlive()) {
-						winner = sm;
-						selectedsmithers = null;
-						foundone = true;
-					}
-				} 
-				if (!foundone) {
-					try {
-						Thread.sleep(5000);
-					} catch(Exception e) {}
-				}
-			}
-	
-		}
-		if (winner!=selectedsmithers) {
-			LazyHomer.sendRequest("PUT", "/domain/internal/service/bart/nodes/"+myip+"/properties/activesmithers", winner.getIpNumber(), "text/xml");
-			if (selectedsmithers==null) {
-				LOG.info("changed to "+winner.getIpNumber()+" prefered="+pref);
-			} else {
-				LOG.info("changed from "+selectedsmithers.getIpNumber()+" to "+winner.getIpNumber()+" prefered="+pref);
-			}
-		}
-		selectedsmithers = winner;
-	}
 	
 	/**
 	 * get root path
