@@ -146,12 +146,15 @@ public class BartServlet extends HttpServlet {
 			if (barney!=null) {
 				// perform a security check can we read the url including the depth ?
 				String duri = getDomainString(uri);
-				String allowed = barney.get("allowed(read,"+duri+","+depth+","+account+","+password+")",null,null);
-				if (allowed!=null && allowed.equals("true")) {
+				String allowed = barney.get("bartallowed(read,"+duri+","+depth+","+account+","+password+")",null,null);
+				if (allowed.equals("200")) {
 					String xml = "<fsxml><properties><depth>"+depth+"</depth></properties></fsxml>";
 					body = smithers.get(duri,xml,"text/xml");
+					response.setStatus(200);
+				} else if (allowed.equals("403")) {
+					body = createFsxmlError("user : "+account+" not allowed on that uri or depth",403);
+					response.setStatus(403);
 				} else {
-					//body = createFsxmlError("not allowed to read that uri or depth",401);
 					response.setContentType("text/xml; charset=UTF-8");
 					response.setHeader("WWW-Authenticate", "BASIC realm=\"springfield\""); 
 					response.setStatus(401);
@@ -159,8 +162,6 @@ public class BartServlet extends HttpServlet {
 			} else {
 				body = createFsxmlError("can't reach barney to check security",500);
 			}
-			out.write(body.getBytes());
-			out.close();
 		}
 		out.write(body.getBytes());
 		out.flush();
