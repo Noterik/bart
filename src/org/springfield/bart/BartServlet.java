@@ -130,7 +130,7 @@ public class BartServlet extends HttpServlet {
 		String body ="";
 		if (smithers==null) {
 			body = createFsxmlError("no active smithers",500);
-		} else if (getDomain(uri).equals("internal")) {
+		} else if (getDomain(uri).equals("internal") && !account.equals("admin")) {
 			body = createFsxmlError("internal domain is never allowed from bart",401);
 		} else {
 			String ds = request.getParameter("depth");
@@ -146,7 +146,9 @@ public class BartServlet extends HttpServlet {
 			if (barney!=null) {
 				// perform a security check can we read the url including the depth ?
 				String duri = getDomainString(uri);
+				System.out.println("BARTREQ="+duri);
 				String allowed = barney.get("bartallowed(read,"+duri+","+depth+","+account+","+password+")",null,null);
+				System.out.println("ALLOWED="+allowed);
 				if (allowed.equals("200")) {
 					String xml = "<fsxml><properties><depth>"+depth+"</depth></properties></fsxml>";
 					body = smithers.get(duri,xml,"text/xml");
