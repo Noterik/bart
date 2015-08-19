@@ -16,7 +16,6 @@
 	    <url-pattern>/*</url-pattern>
 	</servlet-mapping>
 	
-	<!-- listener that initializes server, since Application.start() is no longer called upon context load in restlet 2.x -->
   	<listener>
   		<listener-class>org.springfield.bart.BartContextListener</listener-class>
   	</listener>

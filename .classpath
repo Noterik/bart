@@ -19,9 +19,6 @@
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/jdom-1.0.jar"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/log4j-1.2.16.jar"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/org.osgi.core-4.0.0.jar"/>
-	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/org.restlet-2.0.10.jar"/>
-	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/org.restlet.ext.servlet-2.0.10.jar"/>
-	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/org.restlet.ext.xml-2.0.10.jar"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/xalan-2.6.0.jar"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/xercesImpl-2.6.2.jar"/>
 	<classpathentry kind="lib" path="WebContent/WEB-INF/lib/xml-apis-1.0.b2.jar"/>
