@@ -6,3 +6,5 @@
 *.war
 
 *.jar
+
+WebContent/build.txt
