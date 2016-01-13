@@ -21,7 +21,9 @@
 package org.springfield.bart;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -29,6 +31,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
 import org.springfield.mojo.interfaces.ServiceInterface;
 import org.springfield.mojo.interfaces.ServiceManager;
@@ -77,11 +80,12 @@ public class BartServlet extends HttpServlet {
 		response.addHeader("Access-Control-Allow-Methods","GET, POST, PUT, DELETE, OPTIONS");
 		response.addHeader("Access-Control-Allow-Headers", "Content-Type");
 		
-		/*String authorization = request.getHeader("Authorization");
+		String authorization = request.getHeader("Authorization");
 	    if (authorization!=null && authorization.startsWith("Basic")) {
 	    	try {
 	    		String base64 = authorization.substring("Basic".length()).trim();
-	    		String values = new String(Base64.decode(base64),Charset.forName("UTF-8"));
+	
+	    		String values = new String(Base64.decodeBase64(base64.getBytes()),Charset.forName("UTF-8"));
 	    		final String[] p = values.split(":",2);
 	    		account = p[0];
 	    		password = p[1];
@@ -97,9 +101,7 @@ public class BartServlet extends HttpServlet {
 			response.setHeader("WWW-Authenticate", "BASIC realm=\"springfield\""); 
 			response.setStatus(401);
 			return;
-	    }*/
-		account = "admin";
-		password = "ronflonflon12";
+	    }
 	    
 		String uri = request.getRequestURI();
 				
@@ -125,9 +127,7 @@ public class BartServlet extends HttpServlet {
 			if (barney!=null) {
 				// perform a security check can we read the url including the depth ?
 				String duri = getDomainString(uri);
-				System.out.println("BARTREQ="+duri);
 				String allowed = barney.get("bartallowed(read,"+duri+","+depth+","+account+","+password+")",null,null);
-				System.out.println("ALLOWED="+allowed);
 				if (allowed.equals("200")) {
 					String xml = "<fsxml><properties><depth>"+depth+"</depth></properties></fsxml>";
 					body = smithers.get(duri,xml,"text/xml");
@@ -161,11 +161,11 @@ public class BartServlet extends HttpServlet {
 		response.addHeader("Access-Control-Allow-Methods","GET, POST, PUT, DELETE, OPTIONS");
 		response.addHeader("Access-Control-Allow-Headers", "Content-Type");
 		
-		/*String authorization = request.getHeader("Authorization");
+		String authorization = request.getHeader("Authorization");
 	    if (authorization!=null && authorization.startsWith("Basic")) {
 	    	try {
 	    		String base64 = authorization.substring("Basic".length()).trim();
-	    		String values = new String(Base64.decode(base64),Charset.forName("UTF-8"));
+	    		String values = new String(Base64.decodeBase64(base64.getBytes()),Charset.forName("UTF-8"));
 	    		final String[] p = values.split(":",2);
 	    		account = p[0];
 	    		password = p[1];
@@ -181,9 +181,7 @@ public class BartServlet extends HttpServlet {
 			response.setHeader("WWW-Authenticate", "BASIC realm=\"springfield\""); 
 			response.setStatus(401);
 			return;
-	    }*/
-		account = "admin";
-		password = "ronflonflon12";
+	    }
 	    
 		String uri = request.getRequestURI();
 				
@@ -209,11 +207,18 @@ public class BartServlet extends HttpServlet {
 			if (barney!=null) {
 				// perform a security check can we read the url including the depth ?
 				String duri = getDomainString(uri);
-				System.out.println("BARTREQ="+duri);
 				String allowed = barney.get("bartallowed(write,"+duri+","+depth+","+account+","+password+")",null,null);
-				System.out.println("ALLOWED="+allowed);
 				if (allowed.equals("200")) {
-					String xml = "<fsxml><properties><depth>"+depth+"</depth></properties></fsxml>";
+					InputStream inst = request.getInputStream();
+					String data;
+					
+					java.util.Scanner s = new java.util.Scanner(inst).useDelimiter("\\A");
+					data = (s.hasNext()) ? s.next() : null;
+					
+					if (data==null) {
+						return;
+					}
+					String xml = data;
 					body = smithers.post(duri,xml,"text/xml");
 					response.setStatus(200);
 				} else if (allowed.equals("403")) {
@@ -242,11 +247,11 @@ public class BartServlet extends HttpServlet {
 		response.addHeader("Access-Control-Allow-Methods","GET, POST, PUT, DELETE, OPTIONS");
 		response.addHeader("Access-Control-Allow-Headers", "Content-Type");
 		
-		/*String authorization = request.getHeader("Authorization");
+		String authorization = request.getHeader("Authorization");
 	    if (authorization!=null && authorization.startsWith("Basic")) {
 	    	try {
 	    		String base64 = authorization.substring("Basic".length()).trim();
-	    		String values = new String(Base64.decode(base64),Charset.forName("UTF-8"));
+	    		String values = new String(Base64.decodeBase64(base64.getBytes()),Charset.forName("UTF-8"));
 	    		final String[] p = values.split(":",2);
 	    		account = p[0];
 	    		password = p[1];
@@ -262,9 +267,7 @@ public class BartServlet extends HttpServlet {
 			response.setHeader("WWW-Authenticate", "BASIC realm=\"springfield\""); 
 			response.setStatus(401);
 			return;
-	    }*/
-		account = "admin";
-		password = "ronflonflon12";
+	    }
 	    
 		String uri = request.getRequestURI();
 				
@@ -290,11 +293,19 @@ public class BartServlet extends HttpServlet {
 			if (barney!=null) {
 				// perform a security check can we read the url including the depth ?
 				String duri = getDomainString(uri);
-				System.out.println("BARTREQ="+duri);
 				String allowed = barney.get("bartallowed(write,"+duri+","+depth+","+account+","+password+")",null,null);
-				System.out.println("ALLOWED="+allowed);
 				if (allowed.equals("200")) {
-					String xml = "<fsxml><properties><depth>"+depth+"</depth></properties></fsxml>";
+					
+					InputStream inst = request.getInputStream();
+					String data;
+					
+					java.util.Scanner s = new java.util.Scanner(inst).useDelimiter("\\A");
+					data = (s.hasNext()) ? s.next() : null;
+					
+					if (data==null) {
+						return;
+					}
+					String xml = data;
 					body = smithers.put(duri,xml,"text/xml");
 					response.setStatus(200);
 				} else if (allowed.equals("403")) {
