@@ -33,6 +33,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.log4j.Logger;
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.DocumentHelper;
 import org.springfield.mojo.interfaces.ServiceInterface;
 import org.springfield.mojo.interfaces.ServiceManager;
 
@@ -219,7 +222,14 @@ public class BartServlet extends HttpServlet {
 						return;
 					}
 					String xml = data;
-					body = smithers.post(duri,xml,"text/xml");
+					String mimetype = "text/xml";
+					
+					try {
+						Document doc = DocumentHelper.parseText(xml);
+						mimetype = doc.selectSingleNode("/fsxml/@mimetype") == null ? mimetype :  doc.selectSingleNode("/fsxml/@mimetype").getText();
+					} catch (DocumentException e) {	}
+					
+					body = smithers.post(duri, xml, mimetype);
 					response.setStatus(200);
 				} else if (allowed.equals("403")) {
 					body = createFsxmlError("user : "+account+" not allowed on that uri or depth",403);
